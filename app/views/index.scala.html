@@ -1,0 +1,79 @@
+@(files: Seq[FileLink])(implicit request: RequestHeader)
+
+@main("Reditor Repository") {
+  <table>
+    @for(file <- files) {
+      @file.state match {
+        case Owned => {
+          <tr>
+            <th><button class="inline" type="button" value="Submit" onclick="del('@file.name')">Delete</button></th>
+            <th><a href="/editor?file_name=@file.name">@file.name (in session)</a></th>
+          </tr>
+        }
+        case Free => {
+          <tr>
+            <th><button class="inline" type="button" value="Submit" onclick="del('@file.name')">Delete</button></th>
+            <th><a href="/editor?file_name=@file.name">@file.name</a></th>
+          </tr>
+        }
+        case Locked => {
+          <tr>
+            <th><button class="inline" type="button" disabled>Delete</button></th>
+            <th>@file.name (locked)</th>
+          </tr>
+        }
+      }
+    }
+    <tr>
+      <th><button id="create" class="inline" type="button" value="Submit" onclick="crt()">Create</button></th>
+      <th><input id="new_filename" type="text"></th>
+    </tr>
+  </table>
+  <script>
+    function crt() {
+      const toSend = {
+        name: document.getElementById("new_filename").value
+      };
+
+      const json = JSON.stringify(toSend);
+      const xhr = new XMLHttpRequest();
+
+      xhr.open("POST", "@routes.EditorController.createFile");
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("Csrf-Token", "@helper.CSRF.getToken.value");
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === xhr.DONE) {
+          if (xhr.status == 200) {
+            window.location.reload();
+          } else {
+            alert("Could not create file. It is likely a file with the same name already exists.");
+          }
+        }
+      }
+      xhr.send(json);
+    }
+
+    function del(filename) {
+      const toSend = {
+        name: filename
+      };
+
+      const json = JSON.stringify(toSend);
+      const xhr = new XMLHttpRequest();
+
+      xhr.open("POST", "@routes.EditorController.deleteFile");
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("Csrf-Token", "@helper.CSRF.getToken.value");
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === xhr.DONE) {
+          if (xhr.status == 200) {
+            window.location.reload();
+          } else {
+            alert("Could not delete file. It is likely the file is locked by another user.");
+          }
+        }
+      }
+      xhr.send(json);
+    }
+  </script>
+}

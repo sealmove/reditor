@@ -1,0 +1,8 @@
+GET     /                           controllers.EditorController.openIndex()
+GET     /editor                     controllers.EditorController.openFile(file_name)
+
+POST    /save                       controllers.EditorController.saveFile
+POST    /create                     controllers.EditorController.createFile
+POST    /delete                     controllers.EditorController.deleteFile
+
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

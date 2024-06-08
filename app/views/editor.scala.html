@@ -1,0 +1,49 @@
+@(entry: FileEntry, cap: Int, saveAfter: Int)(implicit request: RequestHeader)
+
+@main("Reditor") {
+  <script src="@routes.Assets.versioned("javascripts/jquery.min.js")"></script>
+  <h2>@entry.name</h2>
+  <button id="button" class="inline" type="button" value="Submit" onclick="send()">Save</button>
+  <input type="button" value="Go Back" onclick="location.href='@routes.EditorController.openIndex()'"/>
+  <div id="last_save" class="inline"></div>
+  <textarea id="editor" rows="25" autofocus>@entry.content.getOrElse("")</textarea>
+  <script>
+    function send() {
+      const toSend = {
+        name: "@entry.name",
+        content: document.getElementById("editor").value,
+      };
+
+      const json = JSON.stringify(toSend);
+      const xhr = new XMLHttpRequest();
+
+      xhr.open("POST", "@routes.EditorController.saveFile");
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("Csrf-Token", "@helper.CSRF.getToken.value");
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === xhr.DONE) {
+          if (xhr.status == 200) {
+            var msg = "Saved: " + new Date().toLocaleString();
+            document.getElementById("last_save").innerHTML = msg;
+          } else {
+            alert("Changes not saved! It is likely another user opened the " +
+                  "same file while you were inactive for more than @cap seconds. " +
+                  "The file was righteously stolen from you and given to him! " +
+                  "Please wait until he is finished and then reload the page.");
+          }
+        }
+      }
+      xhr.send(json);
+    }
+
+    $(document).ready(function() {
+      var timeoutId;
+      $("#editor").on("input", function() {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(function() {
+          send();
+        }, @saveAfter);
+      });
+    });
+  </script>
+}
